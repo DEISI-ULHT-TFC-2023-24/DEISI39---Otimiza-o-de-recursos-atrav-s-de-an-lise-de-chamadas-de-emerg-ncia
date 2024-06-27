@@ -1,7 +1,7 @@
 import time
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
-from datetime import datetime
+import datetime
 from sklearn.ensemble import RandomForestRegressor
 from datetime import timedelta
 from sklearn.linear_model import LinearRegression
@@ -12,7 +12,7 @@ class FileModifiedHandler(FileSystemEventHandler):
     def on_modified(self, event):
         if event.src_path.endswith("data_chamadas.csv"):
             print("File data_chamadas.csv has been modified!")
-            time.sleep(10)
+            time.sleep(20)
             get_indices(event.src_path)
             # Run your specific code here for file modification
             # For example:
@@ -20,11 +20,11 @@ class FileModifiedHandler(FileSystemEventHandler):
 
 # Adicionar à tabela o turno a que cada meia hora pertence
 def categorize_time(row):
-    if datetime.strptime('00:00:00.000000', '%H:%M:%S.%f') <= row <= datetime.strptime('07:30:00.000000', '%H:%M:%S.%f'):
+    if datetime.datetime.strptime('00:00:00.000000', '%H:%M:%S.%f') <= row <= datetime.datetime.strptime('07:30:00.000000', '%H:%M:%S.%f'):
         return '1'
-    elif datetime.strptime('08:00:00.000000', '%H:%M:%S.%f') <= row <= datetime.strptime('15:30:00.000000', '%H:%M:%S.%f'):
+    elif datetime.datetime.strptime('08:00:00.000000', '%H:%M:%S.%f') <= row <= datetime.datetime.strptime('15:30:00.000000', '%H:%M:%S.%f'):
         return '2'
-    elif datetime.strptime('16:00:00.000000', '%H:%M:%S.%f') <= row <= datetime.strptime('23:30:00.000000', '%H:%M:%S.%f'):
+    elif datetime.datetime.strptime('16:00:00.000000', '%H:%M:%S.%f') <= row <= datetime.datetime.strptime('23:30:00.000000', '%H:%M:%S.%f'):
         return '3'
     else:
         return 'Outro'
@@ -75,10 +75,6 @@ def addHoraDiaAno(df, data, day, month, hora_inicio):
 
     # escolher ultimos 4 valores
     last_4_entries = filtered_df.tail(4)
-
-    # verificar se existe ultimos 4 valores
-    if len(last_4_entries) < 4:
-        return None
 
     # media de acd
     result = last_4_entries['ACDCalls'].mean()
@@ -194,10 +190,25 @@ def watch_directory():
         observer.stop()
     observer.join()
 
+
+date_formats = ["%d/%m/%Y", "%Y/%m/%d", "%Y-%m-%d", "%d-%m-%Y"]
+
+# Function to parse dates
+def parse_date(date_string):
+    for date_format in date_formats:
+        try:
+        
+            return datetime.datetime.strptime(date_string, date_format)
+        except ValueError:
+            pass
+    return None  # If none of the formats succeed
+
 def get_indices(filepath):
     df = pd.read_csv('/home/inem/data_chamadas.csv', delimiter=';')
 
-    df['Data'] = pd.to_datetime(df['Data'], format='%Y-%m-%d')
+    #df['Data'] = pd.to_datetime(df['Data'], format='%d-%m-%Y')
+
+    df['Data'] = df['Data'].apply(parse_date)
 
     # Ordenar o DataFrame por 'Data' e 'HoraInicio'
 
@@ -261,7 +272,7 @@ def work_dataset(df):
 def run_algorith(df):
 
     # Criar lista de horas
-    start_time = datetime.strptime("00:00:00", "%H:%M:%S")
+    start_time = datetime.datetime.strptime("00:00:00", "%H:%M:%S")
 
     listaHoras = []
 
@@ -331,7 +342,7 @@ def export_xlsx(preds, last_date):
     print(type(last_date))
 
     currentDate = last_date
-    currentHour = datetime.strptime('00:00:00', '%H:%M:%S')
+    currentHour = datetime.datetime.strptime('00:00:00', '%H:%M:%S')
 
     while dia < 31:
 
